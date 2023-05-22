@@ -39,17 +39,15 @@ const char *get_args(int argc, char *argv[]) {
 /*
  * This function created for checking access to the file/dir
  * If it available to write inside current path file/dir it will print this path into the console
- * returns:
- * 1 - if user or group have access read dir
- * 0 - if user or group don't have access read dir or this path not for dir
  */
-int get_file_stats(const char *path) {
-    if (path == NULL) return 0;
+void get_file_stats(const char *path) {
+    if (path == NULL) return; // Skip Nullptr dir path
+    if (memcmp(path, "/proc", 5) == 0 || memcmp(path, "/sys", 4) == 0) return; // Skip file/dir starting with /proc and /sys"
     struct stat file_stats;
-    if (stat(path, &file_stats) < 0) return 0;
+    if (stat(path, &file_stats) < 0) return;
 
     // Check access to write into the file/dir in current path
-    if ((file_stats.st_mode & S_IXGRP) && (file_stats.st_mode & S_ISVTX)) return 0;
+    if ((file_stats.st_mode & S_IXGRP) && (file_stats.st_mode & S_ISVTX)) return;
     if ((file_stats.st_mode & S_IWOTH) ||                                                                               // Access for other to write
         (exist_user_id && (file_stats.st_mode & S_IWUSR) && file_stats.st_uid == user_id) ||                            // Access for user  to write
         (exist_group_id && (file_stats.st_mode & S_IWGRP) && file_stats.st_gid == group_id)) {                          // Access for group to write
@@ -63,16 +61,15 @@ int get_file_stats(const char *path) {
         if ((file_stats.st_mode & S_IROTH) ||                                                                           // Access for other to read dir
             (exist_user_id && (file_stats.st_mode & S_IRUSR) == S_IRUSR && file_stats.st_uid == user_id) ||             // Access for user  to read dir
             (exist_group_id && (file_stats.st_mode & S_IRGRP) == S_IRGRP && file_stats.st_gid == group_id))             // Access for group to read dir
-            return 1;
+            get_files(path);
     }
-    return 0;
 }
 
 /*
  * Recursive function for check recursively access for files and dirs
  */
 void get_files(const char *dir_path) {
-    if (dir_path == NULL) return;
+    if (dir_path == NULL) return; // Skip Nullptr dir path
 
     DIR *d = opendir(dir_path);
     if (d == NULL) return;
@@ -84,8 +81,7 @@ void get_files(const char *dir_path) {
         char path_buf[strlen(dir->d_name) + strlen(dir_path) + 2]; // Creating buffer for full path for dir entity
         sprintf(path_buf, "%s/%s", dir_path, dir->d_name);
 
-        if (get_file_stats(path_buf)) // Checking access for new dir and calling recursion
-            get_files(path_buf);
+        get_file_stats(path_buf); // Checking access for new dir and calling recursion
     }
 
     closedir(d);
@@ -93,6 +89,6 @@ void get_files(const char *dir_path) {
 
 int main(int argc, char *argv[]) {
     const char *path_ = get_args(argc - 1, argv + 1);
-    get_files(path_);
+    get_file_stats(path_);
     return 0;
 }
