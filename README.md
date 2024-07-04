@@ -34,7 +34,3 @@ mycheckperm -p /path/to/start/dir -g groupname
 
 * Ensure the program is run with appropriate privileges to access the specified directories.
 * The program assumes a Linux environment and may not behave as expected on other operating systems.
-
-## License
-
-This program is licensed under the MIT License. See LICENSE.txt for details.
